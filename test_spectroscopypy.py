@@ -58,3 +58,7 @@ class PulseTest(TestCase):
         for sample in pulse:
             number_of_samples += 1
         self.assertEqual(len(samples), number_of_samples)
+
+    def test_get_maximum_voltage(self):
+        pulse = Pulse((Sample(0.0, 0.0), Sample(0.1, 0.2), Sample(0.2, 0.4), Sample(0.3, 0.25)))
+        self.assertAlmostEqual(0.4, pulse.get_maximum_voltage())

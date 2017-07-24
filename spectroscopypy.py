@@ -22,3 +22,6 @@ class Pulse(object):
 
     def __iter__(self):
         return self._samples.__iter__()
+
+    def get_maximum_voltage(self):
+        return max([sample.voltage for sample in self._samples])
