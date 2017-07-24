@@ -1,5 +1,6 @@
-from unittest import TestCase
-from spectroscopypy import Sample, Pulse
+from mock import Mock
+from unittest import TestCase, skip
+from spectroscopypy import *
 
 class SampleTest(TestCase):
 
@@ -59,6 +60,35 @@ class PulseTest(TestCase):
             number_of_samples += 1
         self.assertEqual(len(samples), number_of_samples)
 
+    def test_pulses_with_same_samples_in_same_order_are_equal(self):
+        pulse1 = Pulse(self.get_test_samples())
+        pulse2 = Pulse(self.get_test_samples())
+        self.assertTrue(pulse1 == pulse2)
+
+    def test_pulses_with_same_samples_in_different_order_are_not_equal(self):
+        pulse1 = Pulse((Sample(0.0, 0.1), Sample(0.1, 0.4)))
+        pulse2 = Pulse((Sample(0.1, 0.4), Sample(0.0, 0.1)))
+        self.assertTrue(pulse1 != pulse2)
+        
     def test_get_maximum_voltage(self):
         pulse = Pulse((Sample(0.0, 0.0), Sample(0.1, 0.2), Sample(0.2, 0.4), Sample(0.3, 0.25)))
         self.assertAlmostEqual(0.4, pulse.get_maximum_voltage())
+
+
+class PulseAcquisitorTest(TestCase):
+
+    def test_can_create_pulse_acquisitor(self):
+        oscilloscope_stub = Mock(Oscilloscope)
+        pulse_acquisitor = PulseAcquisitor(oscilloscope_stub)
+
+    def test_acquire_pulse(self):
+        oscilloscope_stub = Mock(Oscilloscope)
+        oscilloscope_stub.acquire = Mock(return_value=Pulse((Sample(0, 0),
+                                                             Sample(1, 2),
+                                                             Sample(2, 4))))
+        acquisitor = PulseAcquisitor(oscilloscope_stub)
+        pulse = acquisitor.acquire()
+        expected_pulse = Pulse((Sample(0, 0),
+                                Sample(1, 2),
+                                Sample(2, 4)))
+        self.assertEqual(expected_pulse, pulse)
