@@ -1,4 +1,4 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
@@ -46,5 +46,6 @@ class PulseAcquisitor(object):
 class Oscilloscope(object):
     __metaclass__ = ABCMeta
 
+    @abstractmethod
     def acquire(self):
         pass

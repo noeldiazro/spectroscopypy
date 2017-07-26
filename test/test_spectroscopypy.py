@@ -1,5 +1,5 @@
 from mock import Mock
-from unittest import TestCase, skip
+from unittest import TestCase
 from spectroscopypy import *
 
 class SampleTest(TestCase):
