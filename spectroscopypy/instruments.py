@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import scpipy
-from spectroscopypy import Oscilloscope, Pulse, Sample
+from spectroscopypy import *
 
 class RedPitayaOscilloscope(Oscilloscope):
     def __init__(self, driver):
@@ -52,4 +52,34 @@ class ScpiOscilloscopeDriver(OscilloscopeDriver):
         
     def acquire(self, channel):
         return self._commander.get_acquisition(channel)
-        
+
+
+class RedPitayaGenerator(Generator):
+
+    def __init__(self, commander):
+        self._commander = commander
+
+    def open(self):
+        self._commander.open()
+
+    def write(self, pulse, channel):
+        self._commander.write(pulse, channel)
+
+    def close(self):
+        self._commander.close()
+
+    
+class Commander(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def open(self):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass
+
+    @abstractmethod
+    def write(self, pulse, chanel):
+        pass

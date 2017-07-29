@@ -49,3 +49,24 @@ class Oscilloscope(object):
     @abstractmethod
     def acquire(self):
         pass
+
+def generate_pulse(pulse, channel, generator):
+    generator.open()
+    generator.write(pulse, channel)
+    generator.close()
+
+
+class Generator(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def open(self):
+        pass
+
+    @abstractmethod
+    def write(self, pulse, channel):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass

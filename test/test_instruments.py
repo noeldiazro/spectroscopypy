@@ -1,6 +1,6 @@
 from mock import Mock
-from unittest import TestCase
-from spectroscopypy.instruments import RedPitayaOscilloscope, OscilloscopeDriver, ScpiOscilloscopeDriver
+from unittest import TestCase, skip
+from spectroscopypy.instruments import *
 from spectroscopypy import Pulse, Sample
 
 class RedPitayaOscilloscopeTest(TestCase):
@@ -20,20 +20,59 @@ class RedPitayaOscilloscopeTest(TestCase):
                                 Sample(0.2, 0.6))), pulse)
 
 
+class RedPitayaGeneratorTest(TestCase):
+
+    def test_can_create_generator(self):
+        generator = RedPitayaGenerator(commander=Mock(Commander))
+
+    def test_open_generator(self):
+        commander = Mock(Commander)
+        generator = RedPitayaGenerator(commander)
+
+        generator.open()
+        
+        commander.open.assert_called_once_with()
+
+    def test_close_generator(self):
+        commander = Mock(Commander)
+        generator = RedPitayaGenerator(commander)
+
+        generator.close()
+
+        commander.close.assert_called_once_with()
+
+    def test_write(self):
+        commander = Mock(Commander)
+        generator = RedPitayaGenerator(commander)
+
+        pulse = Pulse((
+                Sample(0.0, 0.0),
+                Sample(0.1, 0.3),
+                Sample(0.2, 0.6),))
+        channel = 1
+        
+        generator.write(pulse, channel)
+
+        commander.write.assert_called_once_with(pulse, channel)
+    
+        
 class ScpiOscilloscopeDriverTest(TestCase):
 
     def test_can_create_scpi_oscilloscope_driver(self):
         driver = ScpiOscilloscopeDriver(address='rp-f0060c.local')
 
+    @skip('WIP')
     def test_open(self):
         driver = ScpiOscilloscopeDriver(address='rp-f0060c.local')
         driver.open()
 
+    @skip('WIP')
     def test_close(self):
         driver = ScpiOscilloscopeDriver(address='rp-f0060c.local')
         driver.open()
         driver.close()
 
+    @skip('WIP')
     def test_acquire(self):
         driver = ScpiOscilloscopeDriver(address='rp-f0060c.local')
         driver.open()

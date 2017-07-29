@@ -2,6 +2,7 @@ from mock import Mock
 from unittest import TestCase
 from spectroscopypy import *
 
+
 class SampleTest(TestCase):
 
     def test_sample_can_be_created(self):
@@ -92,3 +93,4 @@ class PulseAcquisitorTest(TestCase):
                                 Sample(1, 2),
                                 Sample(2, 4)))
         self.assertEqual(expected_pulse, pulse)
+        
