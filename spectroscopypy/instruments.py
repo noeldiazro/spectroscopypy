@@ -69,7 +69,7 @@ class RedPitayaGenerator(Generator):
         self._commander.close()
 
     
-class Commander(object):
+class GeneratorCommander(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -82,4 +82,19 @@ class Commander(object):
 
     @abstractmethod
     def write(self, pulse, chanel):
+        pass
+
+
+class ScpiGeneratorCommander(GeneratorCommander):
+    def __init__(self, host, connection=None):
+        self._connection = connection or scpipy.get_tcpip_scpi_connection(host)
+        self._generator = scpipy.Generator(self._connection)
+
+    def open(self):
+        self._connection.open()
+
+    def write(self, pulse, channel):
+        pass
+
+    def close(self):
         pass

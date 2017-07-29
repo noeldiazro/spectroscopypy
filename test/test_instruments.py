@@ -23,10 +23,10 @@ class RedPitayaOscilloscopeTest(TestCase):
 class RedPitayaGeneratorTest(TestCase):
 
     def test_can_create_generator(self):
-        generator = RedPitayaGenerator(commander=Mock(Commander))
+        generator = RedPitayaGenerator(commander=Mock(GeneratorCommander))
 
     def test_open_generator(self):
-        commander = Mock(Commander)
+        commander = Mock(GeneratorCommander)
         generator = RedPitayaGenerator(commander)
 
         generator.open()
@@ -34,7 +34,7 @@ class RedPitayaGeneratorTest(TestCase):
         commander.open.assert_called_once_with()
 
     def test_close_generator(self):
-        commander = Mock(Commander)
+        commander = Mock(GeneratorCommander)
         generator = RedPitayaGenerator(commander)
 
         generator.close()
@@ -42,7 +42,7 @@ class RedPitayaGeneratorTest(TestCase):
         commander.close.assert_called_once_with()
 
     def test_write(self):
-        commander = Mock(Commander)
+        commander = Mock(GeneratorCommander)
         generator = RedPitayaGenerator(commander)
 
         pulse = Pulse((
@@ -78,3 +78,14 @@ class ScpiOscilloscopeDriverTest(TestCase):
         driver.open()
         result = driver.acquire(channel=1)
         driver.close()
+
+        
+class ScpiGeneratorCommanderTest(TestCase):
+
+    def test_can_create_scpi_generator_commander(self):
+        commander = ScpiGeneratorCommander(host='rp-f0060c.local')
+
+    def test_open(self):
+        commander = ScpiGeneratorCommander(host='rp-f0060c.local', connection=Mock(scpipy.ScpiConnection))
+        commander.open()
+        
