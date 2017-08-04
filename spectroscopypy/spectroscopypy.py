@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from array import array
 from collections import namedtuple
+import matplotlib.pyplot as plt
+
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
 
@@ -34,21 +36,19 @@ class Pulse(object):
     def get_maximum_voltage(self):
         return max([sample.voltage for sample in self._samples])
 
-def plot_pulse(reader):
+def plot_pulse(reader, writer):
     reader.open()
+    writer.open()
     pulse = reader.read()
+    writer.write(pulse)
     reader.close()
+    writer.close()
 
-
-class PulseReader(object):
+class PulseIO(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def open(self):
-        pass
-
-    @abstractmethod
-    def read(self):
         pass
 
     @abstractmethod
@@ -65,6 +65,22 @@ class PulseReader(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+
+class PulseReader(PulseIO):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def read(self):
+        pass
+
+
+class PulseWriter(PulseIO):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def write(self, pulse):
+        pass
 
 
 class PulseDataFileReader(PulseReader):
@@ -94,6 +110,36 @@ class PulseDataFileReader(PulseReader):
         return True if self._file is None else self._file.closed
 
 
+class PulsePlotter(PulseWriter):
+    def __init__(self):
+        self._closed = True
+    
+    def open(self):
+        self._closed = False
+
+    def write(self, pulse):
+        times = [sample.time for sample in pulse]
+        voltages = [sample.voltage for sample in pulse]
+        plt.plot(times, voltages)
+        plt.xlabel('time (s)')
+        plt.ylabel('voltage (V)')
+        plt.grid(True)
+        plt.show()
+
+    def close(self):
+        self._closed = True
+
+    @property
+    def closed(self):
+        return self._closed
+
+    def hold(self):
+        plt.hold(True)
+
+    def unhold(self):
+        plt.hold(False)
+
+    
 class PulseAcquisitor(object):
 
     def __init__(self, oscilloscope):

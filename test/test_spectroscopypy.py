@@ -105,8 +105,13 @@ class PlotPulseTest(TestCase):
         reader.open = Mock(return_value=None)
         reader.read = Mock(return_value=self.get_sample_pulse())
         reader.close = Mock()
-
-        plot_pulse(reader)
+        
+        writer = Mock(PulseWriter)
+        writer.open = Mock()
+        writer.write = Mock()
+        writer.close = Mock()
+        
+        plot_pulse(reader, writer)
 
         reader.open.assert_called_once_with()
         reader.read.assert_called_once_with()
@@ -136,3 +141,30 @@ class PulseDataFileReaderTest(TestCase):
             pulse = self.reader.read()
 
         self.assertEqual(self.samples_per_pulse, len(pulse))
+
+
+class PulsePlotterTest(TestCase):
+
+    def setUp(self):
+        self.plotter = PulsePlotter()
+        
+    def test_plotter_is_closed_on_creation(self):
+        self.assertTrue(self.plotter.closed)
+
+    def test_plotter_is_not_closed_after_open(self):
+        self.plotter.open()
+        self.assertFalse(self.plotter.closed)
+
+    def test_plotter_is_closed_after_close(self):
+        self.plotter.open()
+        self.plotter.close()
+        self.assertTrue(self.plotter.closed)
+
+    def test_hold_plotter(self):
+        self.plotter.hold()
+
+    def test_unhold_plotter(self):
+        self.plotter.unhold()
+    
+    def test_write(self):
+        self.plotter.write(pulse=Pulse((Sample(0, 0), Sample(1, 2), Sample(2, 4), Sample(3, -1))))
