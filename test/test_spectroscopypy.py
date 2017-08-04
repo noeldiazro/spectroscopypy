@@ -93,4 +93,46 @@ class PulseAcquisitorTest(TestCase):
                                 Sample(1, 2),
                                 Sample(2, 4)))
         self.assertEqual(expected_pulse, pulse)
-        
+
+
+class PlotPulseTest(TestCase):
+
+    def get_sample_pulse(self):
+        return Pulse((Sample(0, 0), Sample(0.1, 0.3), Sample(0.2, 0.8)))
+    
+    def test_plot_pulse_from_datafile(self):
+        reader = Mock(PulseReader)
+        reader.open = Mock(return_value=None)
+        reader.read = Mock(return_value=self.get_sample_pulse())
+        reader.close = Mock()
+
+        plot_pulse(reader)
+
+        reader.open.assert_called_once_with()
+        reader.read.assert_called_once_with()
+        reader.close.assert_called_once_with()
+
+
+class PulseDataFileReaderTest(TestCase):
+
+    def setUp(self):
+        self.samples_per_pulse=8000
+        self.reader = PulseDataFileReader(path='bi_207_amp.dat', samples_per_pulse=self.samples_per_pulse)
+
+    def test_data_file_reader_is_closed_on_creation(self):
+        self.assertTrue(self.reader.closed)
+
+    def test_data_file_reader_is_not_closed_after_open(self):
+        self.reader.open()
+        self.assertFalse(self.reader.closed)
+
+    def test_data_file_reader_is_closed_after_close(self):
+        self.reader.open()
+        self.reader.close()
+        self.assertTrue(self.reader.closed)
+
+    def test_pulse_has_correct_number_of_samples(self):
+        with self.reader as r:
+            pulse = self.reader.read()
+
+        self.assertEqual(self.samples_per_pulse, len(pulse))
