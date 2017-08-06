@@ -113,17 +113,24 @@ class PulseDataFileReader(PulseReader):
 class PulsePlotter(PulseWriter):
     def __init__(self):
         self._closed = True
-    
+
     def open(self):
         self._closed = False
+        self._figure = plt.figure()
+        self._axes = self._figure.add_subplot(111)
 
     def write(self, pulse):
-        times = [sample.time for sample in pulse]
+        times = [sample.time * 1000000 for sample in pulse]
         voltages = [sample.voltage for sample in pulse]
-        plt.plot(times, voltages)
-        plt.xlabel('time (s)')
-        plt.ylabel('voltage (V)')
-        plt.grid(True)
+
+        self._axes.plot(times, voltages, 'b-')
+        self._axes.set_xlabel('Time (us)')
+        self._axes.set_ylabel('Voltage (V)')
+        self._axes.set_yticks([i for i in range(0, 9)])
+        self._axes.grid(True)
+        self._axes.axis([-3, 13, -1, 9])
+
+    def show(self):
         plt.show()
 
     def close(self):
@@ -133,13 +140,7 @@ class PulsePlotter(PulseWriter):
     def closed(self):
         return self._closed
 
-    def hold(self):
-        plt.hold(True)
 
-    def unhold(self):
-        plt.hold(False)
-
-    
 class PulseAcquisitor(object):
 
     def __init__(self, oscilloscope):

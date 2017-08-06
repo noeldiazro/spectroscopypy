@@ -160,11 +160,6 @@ class PulsePlotterTest(TestCase):
         self.plotter.close()
         self.assertTrue(self.plotter.closed)
 
-    def test_hold_plotter(self):
-        self.plotter.hold()
-
-    def test_unhold_plotter(self):
-        self.plotter.unhold()
-    
     def test_write(self):
-        self.plotter.write(pulse=Pulse((Sample(0, 0), Sample(1, 2), Sample(2, 4), Sample(3, -1))))
+        with self.plotter as plotter:
+            self.plotter.write(pulse=Pulse((Sample(0, 0), Sample(1, 2), Sample(2, 4), Sample(3, -1))))
