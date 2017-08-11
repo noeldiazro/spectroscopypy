@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from array import array
 from collections import namedtuple
 import matplotlib.pyplot as plt
-
+from scpipy import Waveform
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
 
@@ -35,6 +35,15 @@ class Pulse(object):
     
     def get_maximum_voltage(self):
         return max([sample.voltage for sample in self._samples])
+
+    @property
+    def times(self):
+        return tuple([time for time, _ in self._samples])
+
+    @property
+    def voltages(self):
+        return tuple([voltage for _, voltage in self._samples])
+
 
 def plot_pulse(reader, writer):
     reader.open()
@@ -126,9 +135,9 @@ class PulsePlotter(PulseWriter):
         self._axes.plot(times, voltages, 'b-')
         self._axes.set_xlabel('Time (us)')
         self._axes.set_ylabel('Voltage (V)')
-        self._axes.set_yticks([i for i in range(0, 9)])
+#        self._axes.set_yticks([i for i in range(0, 9)])
         self._axes.grid(True)
-        self._axes.axis([-3, 13, -1, 9])
+#        self._axes.axis([-3, 13, -1, 9])
 
     def show(self):
         plt.show()
@@ -141,39 +150,100 @@ class PulsePlotter(PulseWriter):
         return self._closed
 
 
-class PulseAcquisitor(object):
+class RedPitaya(object):
 
-    def __init__(self, oscilloscope):
-        self._oscilloscope = oscilloscope
+    def __init__(self, host, port=5000):
+        self._host = host
+        self._port = port
 
-    def acquire(self):
-        return self._oscilloscope.acquire()
+    @property
+    def host(self):
+        return self._host
 
+    @property
+    def port(self):
+        return self._port
 
-class Oscilloscope(object):
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def acquire(self):
-        pass
-
-def generate_pulse(pulse, channel, generator):
-    generator.open()
-    generator.write(pulse, channel)
-    generator.close()
+    def get_scope_channel(self, channel_id):
+        return RedPitayaOscilloscopeChannel(channel_id)
 
 
-class Generator(object):
-    __metaclass__ = ABCMeta
+class RedPitayaOscilloscopeChannel(PulseReader):
 
-    @abstractmethod
+    def __init__(self, channel_id, commander):
+        self._channel_id = channel_id
+        self._commander = commander
+    
+    @property
+    def channel_id(self):
+        return self._channel_id
+
     def open(self):
-        pass
+        self._commander.open()
 
-    @abstractmethod
-    def write(self, pulse, channel):
-        pass
-
-    @abstractmethod
     def close(self):
-        pass
+        self._commander.close()
+
+    def read(self):
+        return self._commander.read(self._channel_id)
+
+    @property
+    def closed(self):
+        return self._commander.closed
+
+
+class RedPitayaGeneratorChannel(PulseWriter):
+    
+    def __init__(self, channel_id, connection, generator):
+        self._channel_id = channel_id
+        self._connection = connection
+        self._generator = generator
+        
+    def open(self):
+        self._connection.open()
+
+    def close(self):
+        self._connection.close()
+
+    def write(self, pulse):
+        self._generator.reset()
+        self._generator.set_waveform(self.channel_id, Waveform.ARBITRARY)
+        self._generator.set_arbitrary_waveform_data(self.channel_id, pulse.voltages)
+        pulse_sampling_period = pulse.times[1] - pulse.times[0]
+        self._generator.set_frequency(self.channel_id, int(1/(pulse_sampling_period*16384)))
+        self._generator.set_amplitude(self.channel_id, 1)
+
+        self._generator.enable_output(self.channel_id)
+
+    @property
+    def closed(self):
+        return self._connection.closed
+
+    @property
+    def channel_id(self):
+        return self._channel_id
+
+
+class Commander(object):
+
+    def __init__(self, connection, scope):
+        self._connection = connection
+        self._scope = scope
+
+    @property
+    def closed(self):
+        return self._connection.closed
+
+    def open(self):
+        self._connection.open()
+
+    def close(self):
+        self._connection.close()
+
+    def read(self, channel_id):
+        self._scope.reset()
+        self._scope.set_decimation_factor(64)
+        self._scope.start()
+        self._scope.trigger_immediately()
+        times, voltages = self._scope.get_acquisition(channel_id)
+        return Pulse(tuple([Sample(time, voltage) for time, voltage in zip(times, voltages)]))
