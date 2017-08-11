@@ -2,7 +2,9 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from array import array
 from collections import namedtuple
 import matplotlib.pyplot as plt
+import numpy as np
 from scpipy import Waveform
+
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
 
@@ -44,6 +46,37 @@ class Pulse(object):
     def voltages(self):
         return tuple([voltage for _, voltage in self._samples])
 
+    def smooth(self, window_size=1000, order=4):
+        '''http://scipy.github.io/old-wiki/pages/Cookbook/SavitzkyGolay'''
+        order_range = range(order + 1)
+        half_window = (window_size - 1) // 2
+        b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window + 1)])
+        m = np.linalg.pinv(b).A[0]
+
+        y = np.asarray(self.voltages)
+        firstvals = y[0] - np.abs(y[1:half_window+1][::-1] - y[0])
+        lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
+        
+        smoothed_y = np.convolve(m[::-1],
+                                 np.concatenate((firstvals, y, lastvals)),
+                                 mode='valid')
+
+        return Pulse(tuple([Sample(time, voltage) for time, voltage in zip(self.times, smoothed_y)]))
+        
+    def normalize_times(self):
+        min_time = min(self.times)
+        return Pulse(tuple(
+            Sample(time, voltage)
+            for time, voltage
+            in zip([time - min_time for time in self.times], self.voltages)))
+
+    def normalize_voltages(self):
+        max_voltage = max(self.voltages)
+        return Pulse(tuple(
+            Sample(time, voltage)
+            for time, voltage
+            in zip(self.times, [1.0*voltage/max_voltage for voltage in self.voltages])))
+        
 
 def plot_pulse(reader, writer):
     reader.open()
@@ -207,13 +240,20 @@ class RedPitayaGeneratorChannel(PulseWriter):
 
     def write(self, pulse):
         self._generator.reset()
+
         self._generator.set_waveform(self.channel_id, Waveform.ARBITRARY)
         self._generator.set_arbitrary_waveform_data(self.channel_id, pulse.voltages)
         pulse_sampling_period = pulse.times[1] - pulse.times[0]
         self._generator.set_frequency(self.channel_id, int(1/(pulse_sampling_period*16384)))
         self._generator.set_amplitude(self.channel_id, 1)
 
+        self._generator.set_burst_count(self.channel_id, 1)
+        self._generator.set_burst_repetitions(self.channel_id, 1)
+        self._generator.set_burst_period(self.channel_id, 2000)
+
         self._generator.enable_output(self.channel_id)
+        self._generator.enable_burst(self.channel_id)
+        self._generator.trigger_immediately(self.channel_id)
 
     @property
     def closed(self):

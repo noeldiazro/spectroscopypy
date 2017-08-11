@@ -83,6 +83,39 @@ class PulseTest(TestCase):
         pulse = Pulse((Sample(0.0, 0.0), Sample(0.1, 0.2), Sample(0.2, 0.4), Sample(0.3, 0.25)))
         self.assertAlmostEqual(0.4, pulse.get_maximum_voltage())
 
+    @skip('wip')
+    def test_normalize_times(self):
+        pulse = Pulse((Sample(-0.2, 0.4),
+                       Sample(-0.1, 0.6),
+                       Sample(0, 0.8),
+                       Sample(0.1, 1.2),
+                       Sample(0.2, 0.9),))
+
+        normalized_pulse = pulse.normalize_times()
+
+        expected_pulse = Pulse((Sample(0.0, 0.4),
+                                Sample(0.1, 0.6),
+                                Sample(0.2, 0.8),
+                                Sample(0.3, 1.2),
+                                Sample(0.4, 0.9),))
+        self.assertEqual(expected_pulse.times, normalized_pulse.times)
+
+    def test_normalize_voltages(self):
+        pulse = Pulse((Sample(0.0, 0.0),
+                       Sample(0.1, 1.0),
+                       Sample(0.2, 2.0),
+                       Sample(0.3, 3.0),
+                       Sample(0.4, 4.0),))
+
+        normalized_pulse = pulse.normalize_voltages()
+
+        expected_pulse = Pulse((Sample(0.0, 0.0),
+                       Sample(0.1, 0.25),
+                       Sample(0.2, 0.5),
+                       Sample(0.3, 0.75),
+                       Sample(0.4, 1.0),))
+        self.assertEqual(expected_pulse.voltages, normalized_pulse.voltages)
+        
 
 class PulseDataFileReaderTest(TestCase):
 
@@ -182,6 +215,10 @@ class RedPitayaGeneratorChannelTest(TestCase):
         self.channel.generator.set_arbitrary_waveform_data.assert_called_once_with(self.CHANNEL_ID, (0, 2, 4, -1))
         self.channel.generator.set_frequency.assert_called_once_with(self.CHANNEL_ID, 61)
         self.channel.generator.set_amplitude.assert_called_once_with(self.CHANNEL_ID, 1)
+
+        self.channel.generator.set_burst_count.assert_called_once_with(self.CHANNEL_ID, 1)
+        self.channel.generator.set_burst_repetitions.assert_called_once_with(self.CHANNEL_ID, 1)
+        self.channel.generator.set_burst_period.assert_called_once_with(self.CHANNEL_ID, 2000)
         self.channel.generator.enable_output.assert_called_once_with(self.CHANNEL_ID)
         
 
@@ -288,5 +325,20 @@ class Generator(object):
     def set_amplitude(self, channel_id, amplitude):
         pass
 
+    def set_burst_count(self, channel_id, count):
+        pass
+
+    def set_burst_repetitions(self, channel_id, count):
+        pass
+
+    def set_burst_period(self, channel_id, period):
+        pass
+
     def enable_output(self, channel_id):
+        pass
+
+    def enable_burst(self, channel_id):
+        pass
+
+    def trigger_immediately(self, channel_id):
         pass
