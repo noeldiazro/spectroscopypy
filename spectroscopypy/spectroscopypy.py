@@ -183,48 +183,6 @@ class PulsePlotter(PulseWriter):
         return self._closed
 
 
-class RedPitaya(object):
-
-    def __init__(self, host, port=5000):
-        self._host = host
-        self._port = port
-
-    @property
-    def host(self):
-        return self._host
-
-    @property
-    def port(self):
-        return self._port
-
-    def get_scope_channel(self, channel_id):
-        return RedPitayaOscilloscopeChannel(channel_id)
-
-
-class RedPitayaOscilloscopeChannel(PulseReader):
-
-    def __init__(self, channel_id, commander):
-        self._channel_id = channel_id
-        self._commander = commander
-    
-    @property
-    def channel_id(self):
-        return self._channel_id
-
-    def open(self):
-        self._commander.open()
-
-    def close(self):
-        self._commander.close()
-
-    def read(self):
-        return self._commander.read(self._channel_id)
-
-    @property
-    def closed(self):
-        return self._commander.closed
-
-
 class RedPitayaGeneratorChannel(PulseWriter):
     
     def __init__(self, channel_id, connection, generator):
@@ -262,28 +220,3 @@ class RedPitayaGeneratorChannel(PulseWriter):
     @property
     def channel_id(self):
         return self._channel_id
-
-
-class Commander(object):
-
-    def __init__(self, connection, scope):
-        self._connection = connection
-        self._scope = scope
-
-    @property
-    def closed(self):
-        return self._connection.closed
-
-    def open(self):
-        self._connection.open()
-
-    def close(self):
-        self._connection.close()
-
-    def read(self, channel_id):
-        self._scope.reset()
-        self._scope.set_decimation_factor(64)
-        self._scope.start()
-        self._scope.trigger_immediately()
-        times, voltages = self._scope.get_acquisition(channel_id)
-        return Pulse(tuple([Sample(time, voltage) for time, voltage in zip(times, voltages)]))

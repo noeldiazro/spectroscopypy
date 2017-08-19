@@ -164,29 +164,6 @@ class PulsePlotterTest(TestCase):
             self.plotter.write(pulse=Pulse((Sample(0, 0), Sample(1, 2), Sample(2, 4), Sample(3, -1))))
 
 
-class RedPitayaOscilloscopeChannelTest(TestCase):
-
-    def test_channel_is_closed_on_creation(self):
-        channel = RedPitayaOscilloscopeChannel(1, FakeCommander())
-        self.assertTrue(channel.closed)
-
-    def test_channel_is_not_closed_after_open(self):
-        channel = RedPitayaOscilloscopeChannel(1, FakeCommander())
-        channel.open()
-        self.assertFalse(channel.closed)
-
-    def test_channel_is_closed_after_closing(self):
-        channel = RedPitayaOscilloscopeChannel(1, FakeCommander())
-        channel.open()
-        channel.close()
-        self.assertTrue(channel.closed)
-
-    def test_read_pulse_with_correct_length(self):
-        with RedPitayaOscilloscopeChannel(1, FakeCommander()) as channel:
-            pulse = channel.read()
-        self.assertEqual(5, len(pulse))
-
-
 class RedPitayaGeneratorChannelTest(TestCase):
 
     def setUp(self):
@@ -222,68 +199,12 @@ class RedPitayaGeneratorChannelTest(TestCase):
         self.channel.generator.enable_output.assert_called_once_with(self.CHANNEL_ID)
         
 
-
 class TestableRedPitayaGeneratorChannel(RedPitayaGeneratorChannel):
 
     def __init__(self, channel_id, connection, generator):
         RedPitayaGeneratorChannel.__init__(self, channel_id, connection, generator)
         self.generator = generator
         
-
-
-class CommanderTest(TestCase):
-    
-    def test_can_create_commander(self):
-        connection = FakeConnection()
-        scope = FakeScope()
-        commander = Commander(connection, scope)
-
-    def test_commander_is_closed_on_creation(self):
-        commander = Commander(FakeConnection(), FakeScope())
-        self.assertTrue(commander.closed)
-
-    def test_commander_is_not_closed_after_open(self):
-        commander = Commander(FakeConnection(), FakeScope())
-        commander.open()
-        self.assertFalse(commander.closed)
-
-    def test_commander_is_closed_after_close(self):
-        commander = Commander(FakeConnection(), FakeScope())
-        commander.open()
-        commander.close()
-        self.assertTrue(commander.closed)
-
-    
-    #def test_read_pulse_with_correct_length(self):
-    #    commander = Commander(FakeConnection(), FakeScope())
-    #    commander.open()
-    #    pulse = commander.read(channel_id=1)
-    #    commander.close()
-    #    self.assertEqual(5, len(pulse))
-
-
-class FakeCommander(object):
-
-    def __init__(self):
-        self._closed = True
-
-    def open(self):
-        self._closed = False
-
-    def close(self):
-        self._closed = True
-
-    def read(self, channel_id):
-        return Pulse((Sample(0.0, 0.0),
-                     Sample(0.1, 0.2),
-                     Sample(0.2, 0.6),
-                     Sample(0.3, 0.7),
-                     Sample(0.4, 0.9),))
-    
-    @property
-    def closed(self):
-        return self._closed
-
 
 class FakeConnection(object):
 
@@ -299,13 +220,6 @@ class FakeConnection(object):
     @property
     def closed(self):
         return self._closed
-
-
-class FakeScope(object):
-
-    def get_acquisition(self, channel_id):
-        return ([0.0, 0.1, 0.2, 0.3, 0.4],
-                [0.0, 0.2, 0.6, 0.7, 0.9],)
 
 
 class Generator(object):
