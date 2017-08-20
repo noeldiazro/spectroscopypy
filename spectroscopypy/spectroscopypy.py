@@ -3,7 +3,7 @@ from array import array
 from collections import namedtuple
 import matplotlib.pyplot as plt
 import numpy as np
-from scpipy import Waveform, TriggerSource, Edge
+from scpipy import Waveform, TriggerSource, Edge, get_tcpip_scpi_connection, Oscilloscope, Generator
 
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
@@ -253,3 +253,32 @@ class RedPitayaOscilloscopeChannel(PulseReader):
     @property
     def channel_id(self):
         return self._channel_id
+
+
+class RedPitaya(object):
+
+    def __init__(self, host, port=5000):
+        self._host = host
+        self._port = port
+        
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+
+    def get_generator_channel(self, channel_id):
+        if channel_id not in (1, 2):
+            raise ValueError('Invalid channel id')
+        connection = get_tcpip_scpi_connection(self._host, self._port, timeout=1)
+        generator = Generator(connection)
+        return RedPitayaGeneratorChannel(channel_id, connection, generator)
+
+    def get_oscilloscope_channel(self, channel_id):
+        if channel_id not in (1, 2):
+            raise ValueError('Invalid channel id')
+        connection = get_tcpip_scpi_connection(self._host, self._port, timeout=1)        
+        oscilloscope = Oscilloscope(connection)
+        return RedPitayaOscilloscopeChannel(channel_id, connection, oscilloscope)
