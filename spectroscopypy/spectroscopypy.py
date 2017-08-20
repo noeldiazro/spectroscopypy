@@ -3,7 +3,7 @@ from array import array
 from collections import namedtuple
 import matplotlib.pyplot as plt
 import numpy as np
-from scpipy import Waveform
+from scpipy import Waveform, TriggerSource, Edge
 
 
 Sample = namedtuple('Sample', ['time', 'voltage'])
@@ -213,6 +213,39 @@ class RedPitayaGeneratorChannel(PulseWriter):
         self._generator.enable_burst(self.channel_id)
         self._generator.trigger_immediately(self.channel_id)
 
+    @property
+    def closed(self):
+        return self._connection.closed
+
+    @property
+    def channel_id(self):
+        return self._channel_id
+
+
+class RedPitayaOscilloscopeChannel(PulseReader):
+
+    def __init__(self, channel_id, connection, oscilloscope):
+        self._channel_id = channel_id
+        self._connection = connection
+        self._oscilloscope = oscilloscope
+    
+    def open(self):
+        self._connection.open()
+
+    def close(self):
+        self._connection.close()
+
+    def read(self):
+        self._oscilloscope.reset()
+        self._oscilloscope.set_decimation_factor(1)
+        self._oscilloscope.start()
+
+        self._oscilloscope.set_trigger_level(0.1)
+        self._oscilloscope.set_trigger_event(TriggerSource('CH{}'.format(self._channel_id)), Edge.POSITIVE)
+
+        times, voltages = self._oscilloscope.get_acquisition(self._channel_id)
+        return Pulse(tuple([Sample(time, voltage) for time, voltage in zip(times, voltages)]))
+        
     @property
     def closed(self):
         return self._connection.closed

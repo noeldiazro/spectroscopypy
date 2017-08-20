@@ -1,7 +1,7 @@
 from mock import Mock
 from unittest import TestCase, skip
 from spectroscopypy import *
-
+from scpipy import TriggerSource, Edge
 
 class SampleTest(TestCase):
 
@@ -206,15 +206,62 @@ class TestableRedPitayaGeneratorChannel(RedPitayaGeneratorChannel):
         self.generator = generator
         
 
+class RedPitayaOscilloscopeChannelTest(TestCase):
+
+    def setUp(self):
+        self.CHANNEL_ID = 1
+        oscilloscope = Mock(Oscilloscope)
+        oscilloscope.get_acquisition = Mock(return_value = ((0, 1e-6, 2e-6, 3e-6), (0, 2, 4, -1)))
+        self.channel = TestableRedPitayaOscilloscopeChannel(self.CHANNEL_ID, FakeConnection(), oscilloscope)
+    
+    def test_correct_channel_id(self):
+        self.assertEqual(self.CHANNEL_ID, self.channel.channel_id)
+
+    def test_channel_is_closed_after_creation(self):
+        self.assertTrue(self.channel.closed)
+
+    def test_channel_is_not_closed_after_open(self):
+        self.channel.open()
+        self.assertTrue(self.channel.connection.open_called)
+        self.assertFalse(self.channel.closed)
+
+    def test_channel_is_closed_after_closing(self):
+        self.channel.open()
+        self.channel.close()
+        self.assertTrue(self.channel.connection.open_called)
+        self.assertTrue(self.channel.connection.close_called)
+        self.assertTrue(self.channel.closed)
+
+    def test_read(self):
+        pulse = self.channel.read()
+        self.channel.oscilloscope.reset.assert_called_once_with()
+        self.channel.oscilloscope.set_decimation_factor.assert_called_once_with(1)
+        self.channel.oscilloscope.start.assert_called_once_with()
+        self.channel.oscilloscope.set_trigger_event.assert_called_once_with(TriggerSource.CH1, Edge.POSITIVE)
+        self.channel.oscilloscope.get_acquisition.assert_called_once_with(self.CHANNEL_ID)
+        self.assertEqual(Pulse((Sample(0, 0), Sample(1e-6, 2), Sample(2e-6, 4), Sample(3e-6, -1))), pulse)
+
+
+class TestableRedPitayaOscilloscopeChannel(RedPitayaOscilloscopeChannel):
+    def __init__(self, channel_id, connection, oscilloscope):
+        RedPitayaOscilloscopeChannel.__init__(self, channel_id, connection, oscilloscope)
+        self.connection = connection
+        self.oscilloscope = oscilloscope
+
+
 class FakeConnection(object):
 
     def __init__(self):
         self._closed = True
+        self.open_called = False
+        self.close_called = False
 
     def open(self):
+        self.open_called = True
         self._closed = False
 
     def close(self):
+        self.close_called = True
         self._closed = True
 
     @property
@@ -255,4 +302,22 @@ class Generator(object):
         pass
 
     def trigger_immediately(self, channel_id):
+        pass
+
+
+class Oscilloscope(object):
+
+    def reset(self):
+        pass
+
+    def set_decimation_factor(self, factor):
+        pass
+
+    def start(self):
+        pass
+
+    def set_trigger_event(self):
+        pass
+
+    def get_acquisition(self, channel):
         pass
